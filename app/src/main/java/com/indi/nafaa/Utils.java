@@ -31,38 +31,66 @@ public class Utils {
     public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final String TAG = "Utils";
     private static final String BASE_URL = "https://192.168.0.115:5000/";
-    private OkHttpClient client;
+    private OkHttpClient clientSecure;
+    private OkHttpClient clientUnsecure;
 
     public Utils(){
+        ConstructSecureClient();
+        ConstructUnsecureClient();
+    }
+
+    private void ConstructSecureClient(){
         // Create certificate pinner with de hash of the host to pin
         CertificatePinner certificatePinner = new CertificatePinner.Builder()
+                //BURP CERT: sha256/ixl1/kHiBPoA/5+rfpC8KNQ+LqhMcIJYX/TmxlVa0OQ=
+                //NAFWS CERT: sha256/UQk1OS/TekX9Cz/i+YHNPPQOU4Ux6MtiNXH9jEuatBo=
                 .add("NAFWS", "sha256/UQk1OS/TekX9Cz/i+YHNPPQOU4Ux6MtiNXH9jEuatBo=")
                 .build();
         try{
-            TrustManager[] trustAllCerts = trustedCerts();
+            TrustManager[] trustPinCert = trustedCerts();
             // Install the all-trusting trust manager
             final SSLContext sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            sslContext.init(null, trustPinCert, new java.security.SecureRandom());
             // Create an ssl socket factory with our all-trusting manager
             final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
-            builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustAllCerts[0]);
+            //Comentar la siguiente linea para deshabilitar el checkeo manual y que se haga directo por el de okhttp3
+            builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustPinCert[0]);
             builder.hostnameVerifier(verifier());
             builder.certificatePinner(certificatePinner);
-            client = builder.build();
+            clientSecure = builder.build();
         }
         catch (Exception e){
             Log.e(TAG, "Created without cert pin..." + e.getLocalizedMessage());
-            client = new OkHttpClient();
+            clientSecure = new OkHttpClient();
         }
+    }
 
+    private void ConstructUnsecureClient() {
+        try{
+            TrustManager[] trustPinCert = trustedCerts();
+            // Install the all-trusting trust manager
+            final SSLContext sslContext = SSLContext.getInstance("SSL");
+            sslContext.init(null, trustPinCert, new java.security.SecureRandom());
+            // Create an ssl socket factory with our all-trusting manager
+            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+            OkHttpClient.Builder builder = new OkHttpClient.Builder();
+            //Comentar la siguiente linea para deshabilitar el checkeo manual y que se haga directo por el de okhttp3
+            builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustPinCert[0]);
+            builder.hostnameVerifier(unsecureVerifier());
+            clientUnsecure = builder.build();
+        }
+        catch (Exception e){
+            Log.e(TAG, "Created without cert pin..." + e.getLocalizedMessage());
+            clientUnsecure = new OkHttpClient();
+        }
     }
 
     private HostnameVerifier verifier(){
         return new HostnameVerifier() {
             @Override
             public boolean verify(String hostname, SSLSession session) {
-                Log.i(TAG, "Verifying hostname: " + hostname);
+                Log.i(TAG, "Secure Verifier --> Verifying hostname: " + hostname);
                 try {
                     MessageDigest md = MessageDigest.getInstance("SHA-256");
                     javax.security.cert.X509Certificate cert = session.getPeerCertificateChain()[0];
@@ -70,7 +98,7 @@ public class Utils {
                     md.update(publicKey,0,publicKey.length);
                     String pin = Base64.encodeToString(md.digest(), Base64.NO_WRAP);
                     Log.i(TAG,"2 >> PIN------------->" + pin);
-                    String pinned = client.certificatePinner().getPins().toArray()[0].toString();
+                    String pinned = clientSecure.certificatePinner().getPins().toArray()[0].toString();
                     Log.i(TAG,"3 >> Pinned---------->" + pinned);
                     return pinned.contains(pin);
                 } catch (SSLPeerUnverifiedException | NoSuchAlgorithmException e) {
@@ -81,13 +109,23 @@ public class Utils {
         };
     }
 
+    private HostnameVerifier unsecureVerifier(){
+        return new HostnameVerifier() {
+            @Override
+            public boolean verify(String hostname, SSLSession session) {
+                Log.i(TAG, "unsecureVerifier--> " + hostname);
+                return true;
+            }
+        };
+    }
+
     private TrustManager[] trustedCerts(){
         // Create a trust manager that does not validate certificate chains
         return new TrustManager[] {
                 new X509TrustManager() {
                     @Override
                     public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-                        Log.i(TAG, "wtf1--->" + chain[0] + " -- " + authType);
+                        Log.i(TAG, "Client trusted check--->" + chain[0] + " -- " + authType);
                     }
 
                     @Override
@@ -114,19 +152,32 @@ public class Utils {
         };
     }
 
-    public String makePostRequest(String service, String json) {
+    public String makePostRequest(String service, String json, boolean secure) {
         RequestBody body = RequestBody.create(json, JSON);
         Request request = new Request.Builder()
                 .url(BASE_URL + service)
                 .post(body)
                 .build();
         Log.i(TAG, "Request --> " + request.toString());
-        try (Response response = client.newCall(request).execute()) {
-            return response.body().string();
+        if(secure){
+            Log.i(TAG, "request is Secure!!");
+            try (Response response = clientSecure.newCall(request).execute()) {
+                return response.body().string();
+            }
+            catch (IOException e){
+                Log.e(TAG, "Error --> " + e.getLocalizedMessage() + e.getMessage());
+                return "Connection Error";
+            }
         }
-        catch (IOException e){
-            Log.e(TAG, "Error --> " + e.getLocalizedMessage() + e.getMessage());
-            return "Connection Error";
+        else{
+            Log.i(TAG, "Request is Unsecure!!");
+            try (Response response = clientUnsecure.newCall(request).execute()) {
+                return response.body().string();
+            }
+            catch (IOException e){
+                Log.e(TAG, "Error --> " + e.getLocalizedMessage() + e.getMessage());
+                return "Connection Error";
+            }
         }
     }
 

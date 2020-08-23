@@ -3,7 +3,8 @@
     <string name="app_name_acronym">NAFAA</string>
     <string name="action_settings">Settings</string>
     <string name="secret_string">This is a secret string</string>
-    <string name="login_btn_string">Login</string>
+    <string name="login_btn_string">Secure Login</string>
+    <string name="unsecure_login_btn_string">Unsecure Login</string>
     <string name="username_hint">Username</string>
     <string name="password_hint">Password</string>
 </resources>

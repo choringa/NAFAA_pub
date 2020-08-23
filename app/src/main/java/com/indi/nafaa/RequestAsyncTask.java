@@ -21,7 +21,8 @@ public class RequestAsyncTask extends AsyncTask<Object, Void, String> {
     protected String doInBackground(Object... params) {
         Utils utils = (Utils) params[0];
         String jsonString = (String) params[1];
-        String response = utils.makePostRequest(Utils.LOGIN_SERVICE, jsonString);
+        boolean secure = (boolean) params[2];
+        String response = utils.makePostRequest(Utils.LOGIN_SERVICE, jsonString, secure);
         return response;
     }
 

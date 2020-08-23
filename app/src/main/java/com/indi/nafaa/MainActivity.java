@@ -36,22 +36,30 @@ public class MainActivity extends AppCompatActivity {
 
         final EditText etUsername = findViewById(R.id.et_main_username);
         final EditText etPassword = findViewById(R.id.et_main_password);
-        Button btnBake = findViewById(R.id.btnSecret);
-        btnBake.setOnClickListener(new View.OnClickListener() {
+        Button btnLoginSecure = findViewById(R.id.btnSecureLogin);
+        btnLoginSecure.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                secretMethod(etUsername.getText().toString(), etPassword.getText().toString());
+                loginMethod(etUsername.getText().toString(), etPassword.getText().toString(), true);
+            }
+        });
+
+        Button btnLoginUnsecure = findViewById(R.id.btnUnsecureLogin);
+        btnLoginUnsecure.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                loginMethod(etUsername.getText().toString(), etPassword.getText().toString(), false);
             }
         });
     }
 
-    public void secretMethod(String username, String password){
+    public void loginMethod(String username, String password, boolean secure){
         Utils utils = new Utils();
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put("username", username);
             jsonObject.put("password", password);
-            Object[] params = {utils, jsonObject.toString()};
+            Object[] params = {utils, jsonObject.toString(), secure};
             new RequestAsyncTask(this).execute(params);
         } catch (JSONException e) {
             e.printStackTrace();
