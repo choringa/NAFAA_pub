@@ -21,6 +21,9 @@ android {
         debug {
             debuggable true
         }
+        releaseDebug {
+            debuggable false
+        }
     }
 }
 
