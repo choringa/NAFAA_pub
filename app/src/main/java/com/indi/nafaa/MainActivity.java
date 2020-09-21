@@ -70,6 +70,11 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this, response, Toast.LENGTH_LONG).show();
     }
 
+    public void setHash(String hash){
+        EditText etHash = findViewById(R.id.et_hash);
+        etHash.setText(hash);
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.

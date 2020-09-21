@@ -65,11 +65,26 @@
         android:ems="10"
         android:hint="@string/password_hint"
         android:inputType="textPassword"
-        app:layout_constraintBottom_toTopOf="@+id/btnSecret"
+        app:layout_constraintBottom_toTopOf="@+id/btnSecureLogin"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/et_main_username"
         app:layout_constraintVertical_bias="0.187" />
+
+    <EditText
+        android:id="@+id/et_hash"
+        android:layout_width="333dp"
+        android:layout_height="49dp"
+        android:layout_marginStart="99dp"
+        android:layout_marginTop="356dp"
+        android:layout_marginEnd="99dp"
+        android:ems="10"
+        android:hint="Recived hash"
+        android:inputType="textPersonName"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.666"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

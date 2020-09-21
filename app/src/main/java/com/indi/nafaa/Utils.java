@@ -30,11 +30,14 @@ public class Utils {
     public static final String LOGIN_SERVICE = "login";
     public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final String TAG = "Utils";
-    private static final String BASE_URL = "https://192.168.0.115:5000/";
+    //private static final String BASE_URL = "https://192.168.0.10:5000/";
+    private static final String BASE_URL = "https://34.196.140.186:5000/";
     private OkHttpClient clientSecure;
     private OkHttpClient clientUnsecure;
+    private String hash;
 
     public Utils(){
+        hash = "";
         ConstructSecureClient();
         ConstructUnsecureClient();
     }
@@ -75,13 +78,12 @@ public class Utils {
             // Create an ssl socket factory with our all-trusting manager
             final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
-            //Comentar la siguiente linea para deshabilitar el checkeo manual y que se haga directo por el de okhttp3
             builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustPinCert[0]);
             builder.hostnameVerifier(unsecureVerifier());
             clientUnsecure = builder.build();
         }
         catch (Exception e){
-            Log.e(TAG, "Created without cert pin..." + e.getLocalizedMessage());
+            Log.e(TAG, "Creating default client." + e.getLocalizedMessage());
             clientUnsecure = new OkHttpClient();
         }
     }
@@ -98,6 +100,7 @@ public class Utils {
                     md.update(publicKey,0,publicKey.length);
                     String pin = Base64.encodeToString(md.digest(), Base64.NO_WRAP);
                     Log.i(TAG,"2 >> PIN------------->" + pin);
+                    hash = pin;
                     String pinned = clientSecure.certificatePinner().getPins().toArray()[0].toString();
                     Log.i(TAG,"3 >> Pinned---------->" + pinned);
                     return pinned.contains(pin);
@@ -166,7 +169,7 @@ public class Utils {
             }
             catch (IOException e){
                 Log.e(TAG, "Error --> " + e.getLocalizedMessage() + e.getMessage());
-                return "Connection Error";
+                return "Connection Error" + ":hash:" + hash;
             }
         }
         else{

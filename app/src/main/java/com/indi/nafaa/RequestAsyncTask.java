@@ -30,6 +30,14 @@ public class RequestAsyncTask extends AsyncTask<Object, Void, String> {
     protected void onPostExecute(String response) {
         super.onPostExecute(response);
         Log.i(TAG, "POST Response----------->" + response);
-        mainActivity.handleResponse(response);
+        if(response.contains(":hash:")){
+            String [] respArray = response.split(":");
+            Log.i(TAG, respArray.length + "");
+            if(respArray.length > 2)
+                mainActivity.setHash(respArray[2]);
+            mainActivity.handleResponse(respArray[0]);
+        }
+        else
+            mainActivity.handleResponse(response);
     }
 }
