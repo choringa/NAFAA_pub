@@ -34,10 +34,8 @@ public class Utils {
     private static final String BASE_URL = "https://34.196.140.186:5000/";
     private OkHttpClient clientSecure;
     private OkHttpClient clientUnsecure;
-    private String hash;
 
     public Utils(){
-        hash = "";
         ConstructSecureClient();
         ConstructUnsecureClient();
     }
@@ -100,7 +98,6 @@ public class Utils {
                     md.update(publicKey,0,publicKey.length);
                     String pin = Base64.encodeToString(md.digest(), Base64.NO_WRAP);
                     Log.i(TAG,"2 >> PIN------------->" + pin);
-                    hash = pin;
                     String pinned = clientSecure.certificatePinner().getPins().toArray()[0].toString();
                     Log.i(TAG,"3 >> Pinned---------->" + pinned);
                     return pinned.contains(pin);
@@ -169,7 +166,7 @@ public class Utils {
             }
             catch (IOException e){
                 Log.e(TAG, "Error --> " + e.getLocalizedMessage() + e.getMessage());
-                return "Connection Error" + ":hash:" + hash;
+                return "Connection Error";
             }
         }
         else{

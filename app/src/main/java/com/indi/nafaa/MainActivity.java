@@ -1,15 +1,19 @@
 package com.indi.nafaa;
 
+import android.content.Intent;
 import android.os.Bundle;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -17,6 +21,8 @@ import org.json.JSONObject;
 public class MainActivity extends AppCompatActivity {
 
     private static String TAG = "MainActivity";
+
+    private TextView tvBadAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
 
         final EditText etUsername = findViewById(R.id.et_main_username);
         final EditText etPassword = findViewById(R.id.et_main_password);
+        tvBadAuth = findViewById(R.id.tvBadAuth);
         Button btnLoginSecure = findViewById(R.id.btnSecureLogin);
         btnLoginSecure.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,12 +74,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void handleResponse(String response){
-        Toast.makeText(this, response, Toast.LENGTH_LONG).show();
-    }
-
-    public void setHash(String hash){
-        EditText etHash = findViewById(R.id.et_hash);
-        etHash.setText(hash);
+        try {
+            JSONObject responseJson = new JSONObject(response);
+            int responseCode =  Integer.parseInt(responseJson.get("code").toString());
+            Log.i(TAG, "handleResponse: " + response);
+            if(responseCode == 200){
+                Intent intent = new Intent(this, ProfileActivity.class);
+                startActivity(intent);
+            }
+            else if(responseCode == 401){
+                tvBadAuth.setVisibility(View.VISIBLE);
+            }
+            else{
+                Toast.makeText(this, "Ups, something went wrong...", Toast.LENGTH_LONG).show();
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "handleResponse: " + e.getLocalizedMessage());
+            Toast.makeText(this, "Ups, something went wrong...", Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
@@ -93,9 +112,11 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
-
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
 }
