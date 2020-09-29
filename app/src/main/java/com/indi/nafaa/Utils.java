@@ -43,12 +43,12 @@ public class Utils {
     private void ConstructSecureClient(){
         // Create certificate pinner with de hash of the host to pin
         CertificatePinner certificatePinner = new CertificatePinner.Builder()
-                //BURP CERT: sha256/ixl1/kHiBPoA/5+rfpC8KNQ+LqhMcIJYX/TmxlVa0OQ=
-                //NAFWS CERT: sha256/UQk1OS/TekX9Cz/i+YHNPPQOU4Ux6MtiNXH9jEuatBo=
-                .add("NAFWS", "sha256/UQk1OS/TekX9Cz/i+YHNPPQOU4Ux6MtiNXH9jEuatBo=")
+                //.add("NAFWS", "sha256/ixl1/kHiBPoA/5+rfpC8KNQ+LqhMcIJYX/TmxlVa0OQ=") //BURP PIN CERT
+                .add("NAFWS", "sha256/UQk1OS/TekX9Cz/i+YHNPPQOU4Ux6MtiNXH9jEuatBo=") //NAFWS PIN CERT
                 .build();
         try{
-            TrustManager[] trustPinCert = trustedCerts();
+            Log.i(TAG, "ConstructSecureClient-->1");
+            TrustManager[] trustPinCert = secureTrustedCerts();
             // Install the all-trusting trust manager
             final SSLContext sslContext = SSLContext.getInstance("SSL");
             sslContext.init(null, trustPinCert, new java.security.SecureRandom());
@@ -61,6 +61,10 @@ public class Utils {
             builder.certificatePinner(certificatePinner);
             clientSecure = builder.build();
         }
+        catch (NoClassDefFoundError defFoundError){
+            //HOOKED
+            clientSecure = new OkHttpClient();
+        }
         catch (Exception e){
             Log.e(TAG, "Created without cert pin..." + e.getLocalizedMessage());
             clientSecure = new OkHttpClient();
@@ -69,14 +73,14 @@ public class Utils {
 
     private void ConstructUnsecureClient() {
         try{
-            TrustManager[] trustPinCert = trustedCerts();
+            TrustManager[] unsecureTrustManager = unsecureTrustedCerts();
             // Install the all-trusting trust manager
             final SSLContext sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, trustPinCert, new java.security.SecureRandom());
+            sslContext.init(null, unsecureTrustManager, new java.security.SecureRandom());
             // Create an ssl socket factory with our all-trusting manager
             final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
-            builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustPinCert[0]);
+            builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)unsecureTrustManager[0]);
             builder.hostnameVerifier(unsecureVerifier());
             clientUnsecure = builder.build();
         }
@@ -105,6 +109,10 @@ public class Utils {
                     e.printStackTrace();
                     return false;
                 }
+                catch (Exception e){
+                    Log.e(TAG, "reboom: " + e.getLocalizedMessage());
+                    return false;
+                }
             }
         };
     }
@@ -119,9 +127,59 @@ public class Utils {
         };
     }
 
-    private TrustManager[] trustedCerts(){
+    private TrustManager[] secureTrustedCerts(){
         // Create a trust manager that does not validate certificate chains
         return new TrustManager[] {
+                new X509TrustManager() {
+                    X509Certificate[] certificates = new X509Certificate[]{};
+                    @Override
+                    public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                        Log.i(TAG, "Client trusted check--->" + chain[0] + " -- " + authType);
+                    }
+
+                    @Override
+                    public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                        Log.i(TAG, "secureTrustManager-->: VALIDATE INIT");
+                        try {
+                            MessageDigest md = MessageDigest.getInstance("SHA-256");
+                            X509Certificate cert = chain[0];
+                            byte[] publicKey = cert.getPublicKey().getEncoded();
+                            md.update(publicKey,0,publicKey.length);
+                            String pin = Base64.encodeToString(md.digest(),
+                                    Base64.NO_WRAP);
+                            Log.i(TAG, "TrustManager --> Certificate hash recived PIN------------->" + pin);
+
+                            String pinned = clientSecure.certificatePinner().getPins().toArray()[0].toString();
+                            Log.i(TAG,"TrustManager --> Pinned Certificate ---------->" + pinned);
+
+
+                            if(pinned.contains(pin)){
+                                certificates[0] = cert;
+                                Log.i(TAG, "TrustManager --> Pinned hash and recived hash are equal!!");
+                            }
+                            else{
+                                throw new CertificateException("TrustManager --> Certificates hashes are not equal. The certificate hash recived from endpoint is: " + pin + ".\n The Certificate hash pinned is: " + pinned);
+                            }
+                        } catch (NoSuchAlgorithmException e) {
+                            Log.e(TAG, Objects.requireNonNull(e.getLocalizedMessage()));
+                        }
+                        catch (CertificateException e){
+                            Log.e(TAG, e.getLocalizedMessage());
+                        }
+                    }
+
+                    @Override
+                    public X509Certificate[] getAcceptedIssuers() {
+                        //Log.i(TAG, "1 <<-----------" + certificates.length);
+                        return certificates;
+                    }
+                }
+        };
+    }
+
+    private TrustManager[] unsecureTrustedCerts() {
+        // Create a trust manager that does not validate certificate chains
+        return new TrustManager[]{
                 new X509TrustManager() {
                     @Override
                     public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
@@ -130,22 +188,12 @@ public class Utils {
 
                     @Override
                     public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-                        try {
-                            MessageDigest md = MessageDigest.getInstance("SHA-256");
-                            X509Certificate cert = chain[0];
-                            byte[] publicKey = cert.getPublicKey().getEncoded();
-                            md.update(publicKey,0,publicKey.length);
-                            String pin = Base64.encodeToString(md.digest(),
-                                    Base64.NO_WRAP);
-                            Log.i(TAG, "First time check server certificate PIN------------->" + pin);
-                        } catch (NoSuchAlgorithmException e) {
-                            Log.e(TAG, Objects.requireNonNull(e.getLocalizedMessage()));
-                        }
+                       Log.i(TAG, "UnsecureTrustManager-->: NOTHING TO VALIDATE --> Incomming cert hash:" + chain[0]);
                     }
 
                     @Override
                     public X509Certificate[] getAcceptedIssuers() {
-                        Log.i(TAG, "1 <<-----------");
+                        //Log.i(TAG, "1 <<-----------");
                         return new X509Certificate[]{};
                     }
                 }
@@ -160,16 +208,18 @@ public class Utils {
                 .build();
         Log.i(TAG, "Request --> " + request.toString());
         if(secure){
+            //ConstructSecureClient();
             Log.i(TAG, "request is Secure!!");
             try (Response response = clientSecure.newCall(request).execute()) {
                 return response.body().string();
             }
             catch (IOException e){
-                Log.e(TAG, "Error --> " + e.getLocalizedMessage() + e.getMessage());
+                Log.e(TAG, "makePostRequest(str,str,bool) --> Error --> " + e.getLocalizedMessage() + e.getMessage());
                 return "Connection Error";
             }
         }
         else{
+            //ConstructUnsecureClient();
             Log.i(TAG, "Request is Unsecure!!");
             try (Response response = clientUnsecure.newCall(request).execute()) {
                 return response.body().string();
