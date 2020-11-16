@@ -30,7 +30,6 @@ public class Utils {
     public static final String LOGIN_SERVICE = "login";
     public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final String TAG = "Utils";
-    //private static final String BASE_URL = "https://192.168.0.10:5000/";
     private static final String BASE_URL = "https://34.196.140.186:5000/";
     private OkHttpClient clientSecure;
     private OkHttpClient clientUnsecure;
@@ -55,7 +54,6 @@ public class Utils {
             // Create an ssl socket factory with our all-trusting manager
             final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
-            //Comentar la siguiente linea para deshabilitar el checkeo manual y que se haga directo por el de okhttp3
             builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustPinCert[0]);
             builder.hostnameVerifier(verifier());
             builder.certificatePinner(certificatePinner);
@@ -131,7 +129,6 @@ public class Utils {
         // Create a trust manager that does not validate certificate chains
         return new TrustManager[] {
                 new X509TrustManager() {
-                    X509Certificate[] certificates = new X509Certificate[]{};
                     @Override
                     public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
                         Log.i(TAG, "Client trusted check--->" + chain[0] + " -- " + authType);
@@ -141,6 +138,7 @@ public class Utils {
                     public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
                         Log.i(TAG, "secureTrustManager-->: VALIDATE INIT");
                         try {
+                            Log.i(TAG, "UnsecureTrustManager--> Incomming cert hash:" + chain[0]);
                             MessageDigest md = MessageDigest.getInstance("SHA-256");
                             X509Certificate cert = chain[0];
                             byte[] publicKey = cert.getPublicKey().getEncoded();
@@ -152,9 +150,7 @@ public class Utils {
                             String pinned = clientSecure.certificatePinner().getPins().toArray()[0].toString();
                             Log.i(TAG,"TrustManager --> Pinned Certificate ---------->" + pinned);
 
-
                             if(pinned.contains(pin)){
-                                certificates[0] = cert;
                                 Log.i(TAG, "TrustManager --> Pinned hash and recived hash are equal!!");
                             }
                             else{
@@ -171,7 +167,7 @@ public class Utils {
                     @Override
                     public X509Certificate[] getAcceptedIssuers() {
                         //Log.i(TAG, "1 <<-----------" + certificates.length);
-                        return certificates;
+                        return new X509Certificate[]{};
                     }
                 }
         };
@@ -206,26 +202,24 @@ public class Utils {
                 .url(BASE_URL + service)
                 .post(body)
                 .build();
-        Log.i(TAG, "Request --> " + request.toString());
+        Log.i(TAG, "makePostRequest --> Request --> " + request.toString());
         if(secure){
-            //ConstructSecureClient();
             Log.i(TAG, "request is Secure!!");
             try (Response response = clientSecure.newCall(request).execute()) {
                 return response.body().string();
             }
             catch (IOException e){
-                Log.e(TAG, "makePostRequest(str,str,bool) --> Error --> " + e.getLocalizedMessage() + e.getMessage());
+                Log.e(TAG, "makePostRequest --> Error --> " + e.getLocalizedMessage() + e.getMessage());
                 return "Connection Error";
             }
         }
         else{
-            //ConstructUnsecureClient();
-            Log.i(TAG, "Request is Unsecure!!");
+            Log.i(TAG, "makePostRequest --> Request is Unsecure!!");
             try (Response response = clientUnsecure.newCall(request).execute()) {
                 return response.body().string();
             }
             catch (IOException e){
-                Log.e(TAG, "Error --> " + e.getLocalizedMessage() + e.getMessage());
+                Log.e(TAG, "makePostRequest --> Error --> " + e.getLocalizedMessage() + e.getMessage());
                 return "Connection Error";
             }
         }
