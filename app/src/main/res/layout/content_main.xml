@@ -90,5 +90,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btnSecureLogin" />
 
+    <Button
+        android:id="@+id/btnEncryptedLogin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/encrypted_btn_string"
+        android:layout_marginTop="30dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnUnsecureLogin" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

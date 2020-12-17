@@ -3,11 +3,18 @@ package com.indi.nafaa;
 import android.util.Base64;
 import android.util.Log;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.util.List;
 import java.util.Objects;
 
 import javax.net.ssl.HostnameVerifier;
@@ -25,12 +32,20 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+import com.indi.nafaa.libsignalclient.MyIdentityKeyStore;
+import com.indi.nafaa.libsignalclient.MyPreKeyStore;
+import com.indi.nafaa.libsignalclient.MySessionStore;
+import com.indi.nafaa.libsignalclient.MySignedPreKeyStore;
+
 public class Utils {
 
     public static final String LOGIN_SERVICE = "login";
+    public static final String LOGIN_ENCRYPTED_SERVICE = "login_encrypted";
+    public static final String ECDH_SERVICE = "ecdh";
     public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final String TAG = "Utils";
-    private static final String BASE_URL = "https://34.196.140.186:5000/";
+    //private static final String BASE_URL = "https://34.196.140.186:5000/";
+    private static final String BASE_URL = "https://192.168.0.115:5000/";
     private OkHttpClient clientSecure;
     private OkHttpClient clientUnsecure;
 
@@ -204,7 +219,7 @@ public class Utils {
                 .build();
         Log.i(TAG, "makePostRequest --> Request --> " + request.toString());
         if(secure){
-            Log.i(TAG, "request is Secure!!");
+            Log.i(TAG, "request is Secured with SSLPinning!!");
             try (Response response = clientSecure.newCall(request).execute()) {
                 return response.body().string();
             }
@@ -214,7 +229,7 @@ public class Utils {
             }
         }
         else{
-            Log.i(TAG, "makePostRequest --> Request is Unsecure!!");
+            Log.i(TAG, "makePostRequest --> Request is Unsecure without SSL Pinning!!");
             try (Response response = clientUnsecure.newCall(request).execute()) {
                 return response.body().string();
             }
@@ -224,5 +239,4 @@ public class Utils {
             }
         }
     }
-
 }
