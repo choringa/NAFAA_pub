@@ -44,8 +44,9 @@ public class Utils {
     public static final String ECDH_SERVICE = "ecdh";
     public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final String TAG = "Utils";
-    //private static final String BASE_URL = "https://34.196.140.186:5000/";
-    private static final String BASE_URL = "https://192.168.0.115:5000/";
+    //private static final String BASE_URL = "https://34.196.140.186:5000/"; //AWS 1
+    private static final String BASE_URL = "https://3.138.221.39:5000/"; //AWS 2
+    //private static final String BASE_URL = "https://192.168.0.115:5000/"; //Local
     private OkHttpClient clientSecure;
     private OkHttpClient clientUnsecure;
 

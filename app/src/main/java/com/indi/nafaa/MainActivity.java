@@ -1,5 +1,6 @@
 package com.indi.nafaa;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -34,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private SecurityModule securityModule;
     private EditText etUsername;
     private EditText etPassword;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        progressDialog = new ProgressDialog(this);
         etUsername = findViewById(R.id.et_main_username);
         etPassword = findViewById(R.id.et_main_password);
         tvBadAuth = findViewById(R.id.tvBadAuth);
@@ -67,7 +70,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 loginMethod(etUsername.getText().toString(), etPassword.getText().toString(), 2);
-                //cryptoBoom();
             }
         });
         Button btnEncryptedLogin = findViewById(R.id.btnEncryptedLogin);
@@ -75,10 +77,29 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 requestSharedKey();
-                //loginMethod(etUsername.getText().toString(), etPassword.getText().toString(), 3);
-                //cryptoBoom();
             }
         });
+    }
+    private void changeProgressDialogMessage(String newMessage){
+        if(progressDialog != null && progressDialog.isShowing())
+            progressDialog.setMessage(newMessage);
+        else
+            showProgressDialogWithTitle(newMessage);
+    }
+
+    // Method to show Progress bar
+    private void showProgressDialogWithTitle(String substring) {
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        //Without this user can hide loader by tapping outside screen
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage(substring);
+        progressDialog.show();
+    }
+
+    // Method to hide/ dismiss Progress bar
+    private void hideProgressDialogWithTitle() {
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.dismiss();
     }
 
     private void requestSharedKey() {
@@ -93,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
 
             Log.i(TAG, "requestSharedKey --> jsonObject: " + jsonObjectPublicKey.toString());
             Object[] params = {jsonObjectPublicKey.toString()};
+            showProgressDialogWithTitle(getString(R.string.generating_shared_secret));
             new RequestSharedKeyAsyncTask(this).execute(params);
         }
         catch (JSONException e){
@@ -107,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
                 jsonObject.put("username", username);
                 jsonObject.put("password", password);
                 Object[] params = {jsonObject.toString(), mode};
+                showProgressDialogWithTitle(getString(R.string.verifying_data));
                 new RequestLoginAsyncTask(this).execute(params);
             } catch (JSONException e) {
                 Log.e(TAG, "ERROR --> loginMethod --> " + e.getLocalizedMessage());
@@ -132,16 +155,19 @@ public class MainActivity extends AppCompatActivity {
                 Object[] params = { loginEncryptedData.toString(), 3};
                 new RequestLoginAsyncTask(this).execute(params);
             } catch (JSONException e) {
+                hideProgressDialogWithTitle();
                 Log.e(TAG, "ERROR --> loginMethod --> " + e.getLocalizedMessage());
             }
         }
         else{
+            hideProgressDialogWithTitle();
             Toast.makeText(this, getString(R.string.empry_pass_or_username), Toast.LENGTH_SHORT);
         }
 
     }
 
     public void handleLoginResponse(String response){
+        hideProgressDialogWithTitle();
         try {
             JSONObject responseJson = new JSONObject(response);
             int responseCode =  Integer.parseInt(responseJson.get("code").toString());
@@ -164,6 +190,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void handleLoginEncryptedResponse(String response){
+        hideProgressDialogWithTitle();
         try {
             JSONObject responseJson = new JSONObject(response);
             int responseCode =  Integer.parseInt(responseJson.get("code").toString());
@@ -201,19 +228,24 @@ public class MainActivity extends AppCompatActivity {
                 boolean sharedKeyCreated = securityModule.setReceiverPublicKey(xCoordinate, yCoordinate);
                 if(sharedKeyCreated){
                     Log.i(TAG, "Se genero el sharedKey entre cliente y servidor de manera correcta");
+                    changeProgressDialogMessage(getString(R.string.verifying_data));
                     loginEncryptedMethod(etUsername.getText().toString(), etPassword.getText().toString());
                 }
                 else{
+                    hideProgressDialogWithTitle();
                     Toast.makeText(this , getString(R.string.error_generating_shared_key), Toast.LENGTH_LONG);
                 }
             }
             else if(responseCode == 401){
+                hideProgressDialogWithTitle();
                 tvBadAuth.setVisibility(View.VISIBLE);
             }
             else{
+                hideProgressDialogWithTitle();
                 Toast.makeText(this, "Ups, something went wrong...", Toast.LENGTH_LONG).show();
             }
         } catch (JSONException e) {
+            hideProgressDialogWithTitle();
             Log.e(TAG, "handleResponse: " + e.getLocalizedMessage());
             Toast.makeText(this, "Ups, something went wrong...", Toast.LENGTH_LONG).show();
         }

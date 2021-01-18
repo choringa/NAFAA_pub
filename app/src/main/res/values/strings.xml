@@ -9,7 +9,9 @@
     <string name="username_hint">Username</string>
     <string name="password_hint">Password</string>
     <string name="profile_title">Welcome</string>
-    <string name="bad_auth">Username or Password are incorrect...</string>
+    <string name="bad_auth">Username or Password are incorrect…</string>
     <string name="empry_pass_or_username">Username and Password can\'t be empty</string>
     <string name="error_generating_shared_key">Error generating shared key with server :(</string>
+    <string name="verifying_data">Verifying data…</string>
+    <string name="generating_shared_secret">Generating shared secret…</string>
 </resources>
