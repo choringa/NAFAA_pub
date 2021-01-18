@@ -11,10 +11,7 @@ import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.interfaces.ECKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
@@ -28,7 +25,6 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyAgreement;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 public class SecurityModule {
@@ -37,10 +33,7 @@ public class SecurityModule {
 
     private final static String ENCRYPTION_ALGORITHM = "AES";
     private final static String KEY_PAIR_ALGORITHM = "EC"; //Elliptic curves
-    private final static int KEY_PAIR_SIZE = 128;
-    //private final static int KEY_PAIR_SIZE = 1024;
     private final static String KEY_AGREEMENT_ALGORITHM = "ECDH"; //Elliptic curves Diffie-Hellman
-    //private final static String KEY_AGREEMENT_ALGORITHM = "EC"; //Elliptic curves Diffie-Hellman
 
     private ECPublicKey clientECPublicKey;
     private ECPrivateKey clientECPrivateKey;
@@ -49,31 +42,11 @@ public class SecurityModule {
     byte[] sharedSecret;
 
     public SecurityModule() {
-        makeKeyExchangeParams();
-        //fakeServerPublicKey();
+        initClientKeys();
     }
 
-    /*
-    private void fakeServerPublicKey(){
-        Log.i(TAG, "fakeServerPublicKey() --> Generando llave EC public Server");
-        KeyPairGenerator kpg = null;
-        try {
-            kpg = KeyPairGenerator.getInstance(KEY_PAIR_ALGORITHM);
-            ECGenParameterSpec spec = new ECGenParameterSpec("secp256r1");
-            //kpg.initialize(KEY_PAIR_SIZE);
-            kpg.initialize(spec);
-            KeyPair kp = kpg.generateKeyPair();
-            PublicKey pk = kp.getPublic();
-
-            Log.i(TAG, "fakeServerPublicKey() --> LLaves fake servidor generadas; publica: " + kp.getPublic().toString() + "; privada: " + kp.getPrivate().toString() + "; Format: " + pk.getFormat() + "; ALGO:" + pk.getAlgorithm());
-            setReceiverPublicKey(kp.getPublic());
-        } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
-            Log.e(TAG, "ERROR --> makeKeyExchangeParams() --> inicializando llaves: " + e.getLocalizedMessage());
-        }
-    }*/
-
-    private void makeKeyExchangeParams() {
-        Log.i(TAG, "makeKeyExchangeParams() --> Generando llaves EC Cliente");
+    private void initClientKeys() {
+        Log.i(TAG, "initClientKeys() --> Generando llaves EC Cliente");
         KeyPairGenerator kpg = null;
         try {
             kpg = KeyPairGenerator.getInstance(KEY_PAIR_ALGORITHM);
@@ -174,7 +147,7 @@ public class SecurityModule {
     }
 
     protected Key generateKey() {
-        Log.i(TAG, "generateKey() --> Generando llave con secreto compartido: " + sharedSecret.toString() + "; encoded:" + Base64.encodeToString(sharedSecret, Base64.DEFAULT));
+        Log.i(TAG, "generateKey() --> Generando llave con secreto compartido: " + sharedSecret.toString() + "; encoded:" + Base64.encodeToString(sharedSecret, Base64.DEFAULT) + "; lenght: " + sharedSecret.length);
         return new SecretKeySpec(sharedSecret, ENCRYPTION_ALGORITHM);
     }
 
