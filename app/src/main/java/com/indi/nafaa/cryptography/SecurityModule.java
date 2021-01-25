@@ -41,10 +41,16 @@ public class SecurityModule {
     KeyAgreement keyAgreement;
     byte[] sharedSecret;
 
+    /**
+     * Constructor
+     */
     public SecurityModule() {
         initClientKeys();
     }
 
+    /**
+     * Metodo que inicia las llaves publica y privada del cliente e inicia el KeyAgreement con la llave privada para generar posteriormente el secreo compartido.
+     */
     private void initClientKeys() {
         Log.i(TAG, "initClientKeys() --> Generando llaves EC Cliente");
         KeyPairGenerator kpg = null;
@@ -64,6 +70,12 @@ public class SecurityModule {
         }
     }
 
+    /**
+     * Metodo que recibe la llave publica del servidor y completa el proceso de KeyAgreement para generar la llave compartida.
+     * @param x Coordenada X de la llave publica del Servidor
+     * @param y Coordenada Y de la llave publica del Servidor
+     * @return true si es posible genrar la llave compartida; false caso contrario.
+     */
     public boolean setReceiverPublicKey(BigInteger x, BigInteger y) {
         try {
             ECParameterSpec ecParameterSpec = clientECPublicKey.getParams();
@@ -77,6 +89,7 @@ public class SecurityModule {
             Log.i(TAG, "setReceiverPublicKey --> Se recibe llave publica del servidor X: " + serverPublicKey.getW().getAffineX() + "; Y: " + serverPublicKey.getW().getAffineY());
             Log.i(TAG, "setReceiverPublicKey --> EXP: " + byteKeyToHex(keyAgreement.generateSecret(ENCRYPTION_ALGORITHM).getEncoded()));
             Log.i(TAG, "setReceiverPublicKey --> Se recibe llave publica del servidor, generando secreto compartido: " + sharedSecret.toString());
+            Log.i(TAG, "setReceiverPublicKey --> Generando llave con secreto compartido: " + sharedSecret.toString() + "; encoded:" + Base64.encodeToString(sharedSecret, Base64.DEFAULT) + "; lenght: " + sharedSecret.length);
             Log.i(TAG, "setReceiverPublicKey --> SHARED KEY HEX =========>: " + byteKeyToHex(sharedSecret));
 
             return true;
@@ -86,27 +99,15 @@ public class SecurityModule {
         }
     }
 
+    /**
+     * Metodo que encrypta un texto plano que recibe como parametro
+     * @param msg el texto plano a encriptar
+     * @return el texto cifrado en un String
+     */
     public String encrypt(String msg) {
         try {
-            Log.i(TAG, "encrypt() --> Encriptando texto:" + msg);
-            Key key = generateKey();
-            Log.i(TAG, "encrypt() --> key data: ALGO: "+  key.getAlgorithm() + "; Format: " + key.getFormat() + "keyEncoded: " + key.getEncoded());
-            Cipher c = Cipher.getInstance(ENCRYPTION_ALGORITHM);
-            Log.i(TAG, "encrypt() --> blocksize: " +  c.getBlockSize());
-            c.init(Cipher.ENCRYPT_MODE, key);
-            byte[] encVal = c.doFinal(msg.getBytes());
-            return Base64.encodeToString(encVal, Base64.DEFAULT);
-        } catch (BadPaddingException | InvalidKeyException | NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException e) {
-            Log.e(TAG, "ERROR --> encrypt(s) --> encriptando datos: " + e.getLocalizedMessage());
-        }
-        return msg;
-    }
-
-    public String encrypt2(String msg) {
-        try {
             Log.i(TAG, "encrypt2() --> Encriptando texto:" + msg);
-            //Key key = generateKey();
-            Key key = keyAgreement.generateSecret(ENCRYPTION_ALGORITHM);
+            Key key = new SecretKeySpec(sharedSecret, ENCRYPTION_ALGORITHM);
             Log.i(TAG, "encrypt2() --> key data: ALGO: "+  key.getAlgorithm() + "; Format: " + key.getFormat() + "; keyEncoded: " + key.getEncoded());
             Cipher c = Cipher.getInstance(ENCRYPTION_ALGORITHM);
             Log.i(TAG, "encrypt2() --> blocksize: " +  c.getBlockSize() + "; KEY: " + byteKeyToHex(key.getEncoded()) + "; KEY BYTES length: " +  key.getEncoded().length);
@@ -121,14 +122,17 @@ public class SecurityModule {
         return msg;
     }
 
+    /**
+     * Metodo que se usa para desencriptar un texto cifrado
+     * @param encryptedData el texto cifrado a desencriptar
+     * @return el texto plano en un String
+     */
     public String decrypt(String encryptedData) {
         try {
             Log.i(TAG, "decrypt() --> Desencriptando texto:" + encryptedData);
-            Key key = generateKey();
+            Key key = new SecretKeySpec(sharedSecret, ENCRYPTION_ALGORITHM);
             Cipher c = Cipher.getInstance(ENCRYPTION_ALGORITHM);
             c.init(Cipher.DECRYPT_MODE, key);
-
-            //byte[] decordedValue = new BASE64Decoder().decodeBuffer(encryptedData);
             byte[] x = encryptedData.getBytes();
             Log.i(TAG, "decrypt() --> x: " + x);
             byte[] decodedValue = Base64.decode(encryptedData, Base64.DEFAULT);
@@ -142,15 +146,19 @@ public class SecurityModule {
         return encryptedData;
     }
 
+    /**
+     * Metodo que devuelve la llave publica del servidor
+     * @return la llave publica del servidor
+     */
     public ECPublicKey getClientECPublicKey() {
         return clientECPublicKey;
     }
 
-    protected Key generateKey() {
-        Log.i(TAG, "generateKey() --> Generando llave con secreto compartido: " + sharedSecret.toString() + "; encoded:" + Base64.encodeToString(sharedSecret, Base64.DEFAULT) + "; lenght: " + sharedSecret.length);
-        return new SecretKeySpec(sharedSecret, ENCRYPTION_ALGORITHM);
-    }
-
+    /**
+     * Metodo que convierte de byte array a hexadecimal
+     * @param bytes el byte array a convertir
+     * @return el hex en un string
+     */
     private static String byteKeyToHex(byte[] bytes) {
         StringBuilder result = new StringBuilder();
         for (byte b : bytes) {

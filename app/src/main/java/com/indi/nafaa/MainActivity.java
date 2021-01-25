@@ -87,21 +87,28 @@ public class MainActivity extends AppCompatActivity {
             showProgressDialogWithTitle(newMessage);
     }
 
-    // Method to show Progress bar
+    /**
+     * Metodo que muestra el progressDialog dado un mensaje como parametro
+     * @param substring el mensaje a mostrar en el progressDialog
+     */
     private void showProgressDialogWithTitle(String substring) {
         progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        //Without this user can hide loader by tapping outside screen
         progressDialog.setCancelable(false);
         progressDialog.setMessage(substring);
         progressDialog.show();
     }
 
-    // Method to hide/ dismiss Progress bar
+    /**
+     * Metodo que esconde el progressDialog
+     */
     private void hideProgressDialogWithTitle() {
         progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         progressDialog.dismiss();
     }
 
+    /**
+     * Metodo que solicita la llave publica al servidor y envia la llave publica del cliente al servidor para poder genera la llave compartida con el modulo de securityModule
+     */
     private void requestSharedKey() {
         ECPublicKey ecPublicKey = securityModule.getClientECPublicKey();
         JSONObject jsonObjectPublicKey = new JSONObject();
@@ -122,6 +129,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Metodo de login general
+     * @param username username
+     * @param password password
+     * @param mode 1 = secure (Con SSL Pinning), 2 = insecure
+     */
     private void loginMethod(String username, String password, int mode){
         if(username.trim().length() > 0 && password.trim().length() > 0){
             JSONObject jsonObject = new JSONObject();
@@ -140,6 +153,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Metodo de login con informacion cifrada
+     * @param username username
+     * @param password password
+     */
     private void loginEncryptedMethod(String username, String password){
         if(username.trim().length() > 0 && password.trim().length() > 0){
             JSONObject loginJsonData = new JSONObject();
@@ -149,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
                 loginJsonData.put("password", password);
                 String plainText = loginJsonData.toString();
                 Log.i(TAG, "loginMethod  --> jsonObject plaintext" + plainText);
-                String encrypted = securityModule.encrypt2(plainText);
+                String encrypted = securityModule.encrypt(plainText);
                 Log.i(TAG, "loginMethod --> Encrypted result: " + encrypted);
                 loginEncryptedData.put("encrypted_data", encrypted);
                 Object[] params = { loginEncryptedData.toString(), 3};
@@ -166,6 +184,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Metodo que procesa la informacion de respuesta del servidor para el login de los vectores 1 y 2
+     * @param response la respuesta del servidor
+     */
     public void handleLoginResponse(String response){
         hideProgressDialogWithTitle();
         try {
@@ -189,6 +211,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Metodo que procesa la informacion de respuesta del servidor. Aca la informacion llega cifrada.
+     * @param response la respuesta del servidor
+     */
     public void handleLoginEncryptedResponse(String response){
         hideProgressDialogWithTitle();
         try {
@@ -215,6 +241,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Metodo que procesa la informacion recibida del servidor. Aca llega la llave publica del servidor para poder ser procesada y generar la llave compartida.
+     * De ser posible crear la llave compartida entre el servidor y el cliente envia la info de login para ser encriptada y enviada al servidor.
+     * @param response La respuesta del servidor que son las coordenadas del punto en la curva eliptica que representa la llave publica del servidor.
+     */
     public void handleECDHResponse(String response){
         try {
             JSONObject responseJson = new JSONObject(response);
