@@ -45,14 +45,33 @@ public class Utils {
     public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final String TAG = "Utils";
     //private static final String BASE_URL = "https://34.196.140.186:5000/"; //AWS 1
-    private static final String BASE_URL = "https://3.138.221.39:5000/"; //AWS 2
-    //private static final String BASE_URL = "https://192.168.0.115:5000/"; //Local
+    //private static final String BASE_URL = "https://3.138.221.39:5000/"; //AWS 2
+    private static String BASE_URL = ""; //Local
     private OkHttpClient clientSecure;
     private OkHttpClient clientUnsecure;
 
-    public Utils(){
+    public Utils(String host){
+        if (host != null || !host.equals("")){
+            Log.i(TAG,"Using host: " + host);
+            BASE_URL = host;
+        }
+        else {
+            Log.i(TAG, "Using default host");
+            BASE_URL = "https://192.168.0.1:5000/";
+        }
+        ValidateURI();
         ConstructSecureClient();
         ConstructUnsecureClient();
+    }
+
+    private void ValidateURI(){
+        if(!BASE_URL.contains("http://") && !BASE_URL.contains("https://")){
+            BASE_URL = "https://" + BASE_URL;
+        }
+        if(!BASE_URL.substring(BASE_URL.length() - 1).equals("/")){
+            BASE_URL = BASE_URL + "/";
+        }
+        Log.i(TAG, "Validated BASE URI: " + BASE_URL);
     }
 
     private void ConstructSecureClient(){

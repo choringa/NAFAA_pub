@@ -27,6 +27,19 @@
         app:layout_constraintVertical_bias="0.0" />
 
     <EditText
+        android:id="@+id/et_main_hostname"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="56dp"
+        android:ems="12"
+        android:text="https://192.168.0.164:5000"
+        android:hint="@string/host_hint"
+        android:inputType="textUri"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
+
+    <EditText
         android:id="@+id/et_main_username"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -36,10 +49,9 @@
         android:ems="10"
         android:hint="@string/username_hint"
         android:inputType="textPersonName"
-
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
+        app:layout_constraintTop_toBottomOf="@+id/et_main_hostname" />
 
     <EditText
         android:id="@+id/et_main_password"

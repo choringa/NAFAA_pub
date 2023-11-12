@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private SecurityModule securityModule;
     private EditText etUsername;
     private EditText etPassword;
+    private EditText etServerHostnameUri;
     private ProgressDialog progressDialog;
 
     @Override
@@ -56,12 +57,13 @@ public class MainActivity extends AppCompatActivity {
         progressDialog = new ProgressDialog(this);
         etUsername = findViewById(R.id.et_main_username);
         etPassword = findViewById(R.id.et_main_password);
+        etServerHostnameUri = findViewById(R.id.et_main_hostname);
         tvBadAuth = findViewById(R.id.tvBadAuth);
         Button btnLoginSecure = findViewById(R.id.btnSecureLogin);
         btnLoginSecure.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                loginMethod(etUsername.getText().toString(), etPassword.getText().toString(), 1);
+                loginMethod(etUsername.getText().toString(), etPassword.getText().toString(), etServerHostnameUri.getText().toString(),1);
             }
         });
 
@@ -69,14 +71,14 @@ public class MainActivity extends AppCompatActivity {
         btnLoginUnsecure.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                loginMethod(etUsername.getText().toString(), etPassword.getText().toString(), 2);
+                loginMethod(etUsername.getText().toString(), etPassword.getText().toString(), etServerHostnameUri.getText().toString(),2);
             }
         });
         Button btnEncryptedLogin = findViewById(R.id.btnEncryptedLogin);
         btnEncryptedLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                requestSharedKey();
+                requestSharedKey(etServerHostnameUri.getText().toString());
             }
         });
     }
@@ -109,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Metodo que solicita la llave publica al servidor y envia la llave publica del cliente al servidor para poder genera la llave compartida con el modulo de securityModule
      */
-    private void requestSharedKey() {
+    private void requestSharedKey(String host) {
         ECPublicKey ecPublicKey = securityModule.getClientECPublicKey();
         JSONObject jsonObjectPublicKey = new JSONObject();
         JSONObject jsonObjectPublicKeyPoint = new JSONObject();
@@ -120,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
             jsonObjectPublicKey.put("public_key", jsonObjectPublicKeyPoint);
 
             Log.i(TAG, "requestSharedKey --> jsonObject: " + jsonObjectPublicKey.toString());
-            Object[] params = {jsonObjectPublicKey.toString()};
+            Object[] params = {jsonObjectPublicKey.toString(), host};
             showProgressDialogWithTitle(getString(R.string.generating_shared_secret));
             new RequestSharedKeyAsyncTask(this).execute(params);
         }
@@ -135,13 +137,13 @@ public class MainActivity extends AppCompatActivity {
      * @param password password
      * @param mode 1 = secure (Con SSL Pinning), 2 = insecure
      */
-    private void loginMethod(String username, String password, int mode){
+    private void loginMethod(String username, String password, String host, int mode){
         if(username.trim().length() > 0 && password.trim().length() > 0){
             JSONObject jsonObject = new JSONObject();
             try {
                 jsonObject.put("username", username);
                 jsonObject.put("password", password);
-                Object[] params = {jsonObject.toString(), mode};
+                Object[] params = {jsonObject.toString(), mode, host};
                 showProgressDialogWithTitle(getString(R.string.verifying_data));
                 new RequestLoginAsyncTask(this).execute(params);
             } catch (JSONException e) {
@@ -158,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
      * @param username username
      * @param password password
      */
-    private void loginEncryptedMethod(String username, String password){
+    private void loginEncryptedMethod(String username, String password, String host){
         if(username.trim().length() > 0 && password.trim().length() > 0){
             JSONObject loginJsonData = new JSONObject();
             JSONObject loginEncryptedData = new JSONObject();
@@ -170,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
                 String encrypted = securityModule.encrypt(plainText);
                 Log.i(TAG, "loginMethod --> Encrypted result: " + encrypted);
                 loginEncryptedData.put("encrypted_data", encrypted);
-                Object[] params = { loginEncryptedData.toString(), 3};
+                Object[] params = { loginEncryptedData.toString(), 3, host};
                 new RequestLoginAsyncTask(this).execute(params);
             } catch (JSONException e) {
                 hideProgressDialogWithTitle();
@@ -260,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
                 if(sharedKeyCreated){
                     Log.i(TAG, "Se genero el sharedKey entre cliente y servidor de manera correcta");
                     changeProgressDialogMessage(getString(R.string.verifying_data));
-                    loginEncryptedMethod(etUsername.getText().toString(), etPassword.getText().toString());
+                    loginEncryptedMethod(etUsername.getText().toString(), etPassword.getText().toString(), etServerHostnameUri.getText().toString());
                 }
                 else{
                     hideProgressDialogWithTitle();

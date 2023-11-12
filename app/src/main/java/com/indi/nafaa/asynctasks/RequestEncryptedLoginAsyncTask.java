@@ -11,6 +11,7 @@ public class RequestEncryptedLoginAsyncTask extends AsyncTask<Object, Void, Stri
     private static final String TAG = "RequestLoginEncryptAT";
     private MainActivity mainActivity;
     private int mode;
+    private String host;
 
     public RequestEncryptedLoginAsyncTask(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
@@ -23,9 +24,10 @@ public class RequestEncryptedLoginAsyncTask extends AsyncTask<Object, Void, Stri
 
     @Override
     protected String doInBackground(Object... params) {
-        Utils utils = new Utils();
         String jsonString = (String) params[0];
         mode = (int) params[1];
+        host = (String) params[2];
+        Utils utils = new Utils(host);
         String response;
         if(mode == 1)
             response = utils.makePostRequest(Utils.LOGIN_SERVICE, jsonString, true);

@@ -22,8 +22,9 @@ public class RequestSharedKeyAsyncTask extends AsyncTask<Object, Void, String> {
 
     @Override
     protected String doInBackground(Object... params) {
-        Utils utils = new Utils();
         String jsonString = (String) params[0];
+        String host = (String) params[1];
+        Utils utils = new Utils(host);
         return utils.makePostRequest(Utils.ECDH_SERVICE, jsonString, false);
     }
 
